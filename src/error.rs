@@ -18,8 +18,6 @@ pub enum Gremlin {
 
     //Outside Errs w/ Source Fields
     IOErr(std::io::Error),
-    IESendErr(std::sync::mpsc::SendError<InputEvent>),
-    RecvErr(std::sync::mpsc::RecvError),
 }
 
 impl fmt::Display for Gremlin {
@@ -32,8 +30,6 @@ impl<'a> std::error::Error for Gremlin {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Gremlin::IOErr(source) => Some(source),
-            Gremlin::IESendErr(source) => Some(source),
-            Gremlin::RecvErr(source) => Some(source),
             _ => None,
         }
     }
@@ -42,17 +38,5 @@ impl<'a> std::error::Error for Gremlin {
 impl<'a> From<std::io::Error> for Gremlin {
     fn from(item: std::io::Error) -> Self {
         Gremlin::IOErr(item)
-    }
-}
-
-impl<'a> From<std::sync::mpsc::SendError<InputEvent>> for Gremlin {
-    fn from(item: std::sync::mpsc::SendError<InputEvent>) -> Self {
-        Gremlin::IESendErr(item)
-    }
-}
-
-impl<'a> From<std::sync::mpsc::RecvError> for Gremlin {
-    fn from(item: std::sync::mpsc::RecvError) -> Self {
-        Gremlin::RecvErr(item)
     }
 }

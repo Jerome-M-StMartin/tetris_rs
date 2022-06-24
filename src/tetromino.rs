@@ -1,6 +1,8 @@
 //Jerome M. St.Martin
 //June 23, 2022
 
+use tiny_rng::{Rng, Rand};
+
 use super::gamestate::GameState;
 
 const SQUARE: [usize; 16] = [0,0,0,0,
@@ -62,15 +64,26 @@ pub(crate) struct Tetromino {
 }
 
 impl Tetromino {
-    pub fn new(block_type: BlockType) -> Self {
+    pub fn new(rng: &mut Rng) -> Self {
+
+        let block_type = match rng.rand_range_u32(0, 7) {
+            0 => BlockType::Square,
+            1 => BlockType::Line,
+            2 => BlockType::T,
+            3 => BlockType::L,
+            4 => BlockType::BackwardsL,
+            5 => BlockType::Z,
+            6 => BlockType::BackwardsZ,
+            _ => panic!("RNG range is incorrectly set."),
+        };
 
         let matrix = match block_type {
             BlockType::Square => { SQUARE },
-            BlockType::Line  => { LINE },
-            BlockType::T  => { T_TETRO },
-            BlockType::L  => { L_TETRO },
+            BlockType::Line => { LINE },
+            BlockType::T => { T_TETRO },
+            BlockType::L => { L_TETRO },
             BlockType::BackwardsL => { BACK_L },
-            BlockType::Z  => { Z_TETRO },
+            BlockType::Z => { Z_TETRO },
             BlockType::BackwardsZ  => { BACK_Z },
         };
 
@@ -81,8 +94,27 @@ impl Tetromino {
         }
     }
 
-    pub fn draw_to_grid(grid: &mut [char; 400], tetro: &Tetromino, draw_at: (usize, usize)) {
-        let (x, y) = (draw_at.0 as usize, draw_at.1 as usize);
+    pub fn rotate(&mut self) {
+        self.rotation = match self.rotation {
+            Rotation::Zero => Rotation::Ninety,
+            Rotation::Ninety => Rotation::OneEighty,
+            Rotation::OneEighty => Rotation::TwoSeventy,
+            Rotation::TwoSeventy => Rotation::Zero,
+        };
+    }
+
+    pub fn draw_to_grid(grid: &mut [char; 200],
+                        to_dedraw: &mut [usize; 4],
+                        tetro: &Tetromino,
+                        draw_at: &(usize, usize)) {
+
+        //De-draw previous draw_to_grid.
+        for idx in &*to_dedraw {
+            grid[*idx] = '.';
+        }
+
+        let (x, y) = (draw_at.0, draw_at.1);
+        let mut cells_drawn = 0; //for populating to_dedraw
 
         //For each cell in the Tetromino matrix...
         for i in 0..16 {
@@ -95,6 +127,10 @@ impl Tetromino {
     
                 //Draw a char to the GameState grid.
                 grid[draw_idx] = '#';
+
+                //Save draw idx for next tick's de-draw.
+                to_dedraw[cells_drawn] = draw_idx;
+                cells_drawn += 1;
             }
         }
     }
@@ -112,7 +148,7 @@ impl Tetromino {
             Rotation::Zero => { /* Init. Value is Correct */ },
             Rotation::Ninety => { idx = 12 + y - (x * 4); },
             Rotation::OneEighty => { idx = 15 - x - (y * 4); },
-            Rotation::TwoSeventy => { idx = 3 + y + (x * 4); },
+            Rotation::TwoSeventy => { idx = 3 - y + (x * 4); },
         }
 
         return tetro.matrix[idx] == 1;
