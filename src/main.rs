@@ -3,19 +3,20 @@
 
 //TETRIS in Rust - Work In Progress
 
+#![allow(dead_code)]
+
 use std::{
     io::{Write, stdout},
-    time::{Instant, SystemTime},
+    time::Instant,
 };
 
-use tiny_rng::{Rng, Rand};
+use tiny_rng::Rand;
 
 use crossterm::{
     queue, //this is for the macro: queue!()
     //QueueableCommand, //this is for buffer.queue() fn
     terminal::*,
     style::*,
-    cursor::*,
 };
 
 use user_input::{InputEvent, UserInput};
@@ -27,43 +28,45 @@ mod gamestate;
 
 fn main() {
 
-    let rng_preseed = Instant::now();
+    let rng_pre_seed = Instant::now();
 
     //Initialization
     crossterm::terminal::enable_raw_mode().unwrap();
 
     let mut buffer = stdout(); //terminal buffer, used by crossterm
-    queue!(buffer,
-           SetTitle("TETRust"),
-           //SetSize(20, 20),
-           MoveToNextLine(1), //cursor command
-           SavePosition, //cursor cmd
-    ).unwrap();
+    queue!(buffer, SetTitle("TETRust"), SetSize(22,25)).unwrap();
 
-    let mut rng = tiny_rng::Rng::from_seed(rng_preseed.elapsed().subsec_nanos() as u64);
-    let mut game_state = gamestate::GameState::new(['.'; 200], &mut rng);
+    let mut rng = tiny_rng::Rng::from_seed(rng_pre_seed.elapsed().subsec_nanos() as u64);
+    let mut game_state = gamestate::GameState::new(['.'; 201], &mut rng);
+    let mut last_tick_start = Instant::now();
     
     loop {
-        //Clear the Buffer
-        queue!(buffer, RestorePosition, Clear(ClearType::All)).unwrap();
+        queue!(buffer, Clear(ClearType::All)).unwrap();
+
+        //Set Tick Timer & Calc. Delta
+        let tick_start = Instant::now();
+        let delta_t = tick_start.duration_since(last_tick_start);
 
         //Read User Input
         let input_event = UserInput::poll_read().unwrap();
         if input_event == InputEvent::Esc { break; }; //Quit Game
         
         //Game Tick
-        let grid_lines: Vec<String> = game_state.tick(input_event, &mut rng);
+        let grid_lines: Vec<String> = game_state.tick(delta_t, input_event, &mut rng);
 
-        //Draw to the Buffer
+        //Commit Grid to the Buffer, Formatted Prettily
         for line in grid_lines {
-            queue!(buffer, Print("     "), Print(line), Print("\n\r")).unwrap();
+            queue!(buffer,
+                   Print("     ┃"), //Padding for left terminal border
+                   Print(line),
+                   Print("┃\n\r"))  //Newline & Cursor Return
+                .unwrap();
         }
+        queue!(buffer, Print("     ┗━━━━━━━━━━┛\n\r")).unwrap(); //Bottom Border
 
-        //Return Cursor to Saved Position
-        queue!(buffer, RestorePosition).unwrap();
-
-        //Execute Queued Buffer Commands
+        //Execute Queued Buffer Commands & Store Tick Timer
         buffer.flush().unwrap();
+        last_tick_start = tick_start;
     }
 
     crossterm::terminal::disable_raw_mode().unwrap();

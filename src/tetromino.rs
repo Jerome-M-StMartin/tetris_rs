@@ -40,6 +40,7 @@ const BACK_Z: [usize; 16] = [0,0,0,0,
                           0,1,1,0,
                           0,0,0,0];
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Rotation {
     Zero,
     Ninety,
@@ -47,50 +48,31 @@ pub(crate) enum Rotation {
     TwoSeventy,
 }
 
-pub(crate) enum BlockType {
-    Square,
-    Line,
-    T,
-    L,
-    BackwardsL,
-    Z,
-    BackwardsZ,
-}
-
+#[derive(Clone, Copy)]
 pub(crate) struct Tetromino {
-    block_type: BlockType,
     rotation: Rotation,
-    matrix: [usize; 16],
+    pub(crate) matrix: [usize; 16],
+    prev_draw_idxs: [usize; 4],
 }
 
 impl Tetromino {
     pub fn new(rng: &mut Rng) -> Self {
 
-        let block_type = match rng.rand_range_u32(0, 7) {
-            0 => BlockType::Square,
-            1 => BlockType::Line,
-            2 => BlockType::T,
-            3 => BlockType::L,
-            4 => BlockType::BackwardsL,
-            5 => BlockType::Z,
-            6 => BlockType::BackwardsZ,
-            _ => panic!("RNG range is incorrectly set."),
-        };
-
-        let matrix = match block_type {
-            BlockType::Square => { SQUARE },
-            BlockType::Line => { LINE },
-            BlockType::T => { T_TETRO },
-            BlockType::L => { L_TETRO },
-            BlockType::BackwardsL => { BACK_L },
-            BlockType::Z => { Z_TETRO },
-            BlockType::BackwardsZ  => { BACK_Z },
+        let matrix = match rng.rand_range_u32(0, 7) {
+            0 => SQUARE,
+            1 => LINE,
+            2 => T_TETRO,
+            3 => L_TETRO,
+            4 => BACK_L,
+            5 => Z_TETRO,
+            6 => BACK_Z,
+            _ => panic!("This should never occur."),
         };
 
         Tetromino {
-            block_type,
             rotation: Rotation::Zero,
             matrix,
+            prev_draw_idxs: [0; 4],
         }
     }
 
@@ -103,34 +85,42 @@ impl Tetromino {
         };
     }
 
-    pub fn draw_to_grid(grid: &mut [char; 200],
-                        to_dedraw: &mut [usize; 4],
-                        tetro: &Tetromino,
-                        draw_at: &(usize, usize)) {
+    pub fn draw_to_grid(grid: &mut [char; 201],
+                        tetro: &mut Tetromino,
+                        draw_at: &(isize, isize)) {
 
         //De-draw previous draw_to_grid.
-        for idx in &*to_dedraw {
-            grid[*idx] = '.';
+        for idx in tetro.prev_draw_idxs {
+            grid[idx] = '.';
         }
 
         let (x, y) = (draw_at.0, draw_at.1);
-        let mut cells_drawn = 0; //for populating to_dedraw
+        let mut num_draws = 0; //for populating to_dedraw
 
         //For each cell in the Tetromino matrix...
         for i in 0..16 {
+            let i: isize = i as isize; //rebind for less type-casting later
+
             //If this cell is a block; i.e. is not empty...
-            if Tetromino::is_tetro_block(tetro, i) {
+            if Tetromino::is_tetro_block(tetro, i as usize) {
                 let delta_x = i % 4;
                 let delta_y = i / 4;
 
-                let draw_idx = GameState::xy_to_idx(x + delta_x, y + delta_y);
-    
-                //Draw a char to the GameState grid.
-                grid[draw_idx] = '#';
+                //if draw_idx is within map bounds
+                if let Some(draw_idx) = GameState::xy_to_idx(x + delta_x, y + delta_y) {
+                    //Draw a char to the GameState grid.
+                    grid[draw_idx] = '#';
 
-                //Save draw idx for next tick's de-draw.
-                to_dedraw[cells_drawn] = draw_idx;
-                cells_drawn += 1;
+                    //Save draw idx for next tick's de-draw.
+                    tetro.prev_draw_idxs[num_draws] = draw_idx;
+                    num_draws += 1;
+                } else {
+                    //Set the topmost, leftmost idx to be redrawn to '.'.
+                    //This is a hack to make things work in 99.9% of cases.
+                    //Should be fixed later: TODO
+                    tetro.prev_draw_idxs[num_draws] = 0;
+                    num_draws += 1;
+                }
             }
         }
     }
@@ -140,7 +130,7 @@ impl Tetromino {
     pub fn is_tetro_block(tetro: &Tetromino, idx: usize) -> bool {
         assert!(idx < 16);
 
-        let (x, y) = Tetromino::idx_to_xy(idx);
+        let (x, y) = Tetromino::idx_to_xy(idx).unwrap();
 
         let mut idx: usize = x + (4 * y);
 
@@ -154,21 +144,21 @@ impl Tetromino {
         return tetro.matrix[idx] == 1;
     }
 
-    fn xy_to_idx(x: usize, y: usize) -> usize {
-        assert!(x < 4 && y < 4);
+    fn xy_to_idx(x: isize, y: isize) -> Option<usize> {
+        if x >= 4 || y >= 4 || x < 0 || y < 0 { return None };
 
         let y = y as usize;
         let x = x as usize;
 
-        (4 * y) + x
+        Some( (4 * y) + x )
     }
 
-    fn idx_to_xy(idx: usize) -> (usize, usize) {
-        assert!(idx < 16);
+    fn idx_to_xy(idx: usize) -> Option<(usize, usize)> {
+        if idx >= 16 { return None };
 
         let x = idx % 4;
         let y = idx / 4;
 
-        (x, y)
+        Some( (x, y) )
     }
 }
