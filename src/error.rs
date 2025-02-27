@@ -3,8 +3,6 @@
 
 use std::fmt;
 
-use super::user_input::InputEvent;
-
 //-------------------------------------------
 //------------ Custom Err Type ------------
 //-------------- & Err Codes --------------
