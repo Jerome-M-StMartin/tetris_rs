@@ -50,7 +50,7 @@ pub(crate) enum Rotation {
 
 #[derive(Clone, Copy)]
 pub(crate) struct Tetromino {
-    rotation: Rotation,
+    pub(crate) rotation: Rotation,
     pub(crate) matrix: [usize; 16],
     prev_draw_idxs: [usize; 4],
 }

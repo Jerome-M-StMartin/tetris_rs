@@ -25,6 +25,7 @@ enum CollisionType {
     Wall, //Disallow movement only
     Floor, //Disallow movement && "glue" block to floor.
     NoCollision, //Do nothing
+    //BadRotation todo
 }
 
 pub(crate) struct GameState {
@@ -34,7 +35,6 @@ pub(crate) struct GameState {
     curr_tetro: Tetromino,
     curr_tetro_pos: (isize, isize),
     timer: Duration,
-    //other fields from class diagram not relevant to Minimum Viable Product
 }
 
 impl GameState {
@@ -66,6 +66,8 @@ impl GameState {
         
         let mut collision_type = CollisionType::NoCollision;
 
+        // it is counter-intuitive to have process_user_input output a collision type.
+        // Oh it's because side-effects. Wow bad.
         collision_type = self.process_user_input(input_event, rng);
 
         self.timer = self.timer.saturating_add(delta_t);
@@ -115,6 +117,7 @@ impl GameState {
         let will_collide = self.collision_check_ahead(Some(dir), None);
             
         match (will_collide, dir) {
+
             //NoCollision
             (false, Dir::Left) => self.curr_tetro_pos.0 -= 1,
             (false, Dir::Right) => self.curr_tetro_pos.0 += 1,
@@ -132,14 +135,27 @@ impl GameState {
         CollisionType::NoCollision
     }
 
+    fn try_rotate(&mut self) -> bool {
+        let test_rot: Rotation;
+
+        match self.curr_tetro.rotation {
+            Rotation::Zero => test_rot = Rotation::Ninety,
+            Rotation::Ninety => test_rot = Rotation::OneEighty,
+            Rotation::OneEighty => test_rot = Rotation::TwoSeventy,
+            Rotation::TwoSeventy => test_rot = Rotation::Zero,
+        }
+
+        self.collision_check_ahead(None, Some(test_rot))
+    }
+
     fn collision_check_ahead(&self, direction: Option<Dir>, rotation: Option<Rotation>) -> bool {
 
         let (mut ghost_x, mut ghost_y) = (self.curr_tetro_pos.0, self.curr_tetro_pos.1);
-        let ghost_tetro = self.curr_tetro;
+        let mut ghost_tetro = self.curr_tetro;
 
         //If we need to check for rotation collision...
-        if let Some(_rot) = rotation {
-            //TODO
+        if let Some(rot) = rotation {
+            ghost_tetro.rotation = rot;
         }
 
         //If we need to check for movement collision...
@@ -170,12 +186,11 @@ impl GameState {
             let is_tetro_block = Tetromino::is_tetro_block(tetro, m_idx);
 
             if is_grid_block && is_tetro_block {
-                //There is a collision.
-                return true;
+                return true; // There is a collision.
             }
         }
         
-        false
+        false // No collision.
     }
 
     fn sub_grid_4x4(&self, pos: (isize, isize)) -> Vec<usize> {
@@ -206,7 +221,12 @@ impl GameState {
 
     fn process_user_input(&mut self, input_event: InputEvent, rng: &mut Rng) -> CollisionType {
         match input_event {
-            InputEvent::Rotate => self.curr_tetro.rotate(),
+            InputEvent::Rotate => {
+                if !self.try_rotate() {
+                    self.curr_tetro.rotate();
+                    return CollisionType::NoCollision
+                }
+            },
             InputEvent::Left => return self.try_move(Dir::Left),
             InputEvent::Right => return self.try_move(Dir::Right),
             InputEvent::Down => return self.try_move(Dir::Down),
