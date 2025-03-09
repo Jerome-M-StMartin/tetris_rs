@@ -16,29 +16,29 @@ const LINE: [usize; 16] = [0,1,0,0,
                         0,1,0,0];
 
 const T_TETRO: [usize; 16] = [0,1,0,0,
-                           0,1,1,0,
-                           0,1,0,0,
-                           0,0,0,0];
+                              0,1,1,0,
+                              0,1,0,0,
+                              0,0,0,0];
 
 const L_TETRO: [usize; 16] = [0,1,0,0,
                            0,1,0,0,
                            0,1,1,0,
                            0,0,0,0];
 
-const BACK_L: [usize; 16] = [0,0,1,0,
-                          0,0,1,0,
-                          0,1,1,0,
-                          0,0,0,0];
+const BACK_L: [usize; 16] = [0,1,0,0,
+                             0,1,0,0,
+                             1,1,0,0,
+                             0,0,0,0];
 
 const Z_TETRO: [usize; 16] = [0,0,0,0,
-                           1,1,0,0,
-                           0,1,1,0,
-                           0,0,0,0];
+                              1,1,0,0,
+                              0,1,1,0,
+                              0,0,0,0];
 
-const BACK_Z: [usize; 16] = [0,0,0,0,
-                          0,0,1,1,
-                          0,1,1,0,
-                          0,0,0,0];
+const BACK_Z: [usize; 16] = [0,1,1,0,
+                             1,1,0,0,
+                             0,0,0,0,
+                             0,0,0,0];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Rotation {
@@ -66,7 +66,7 @@ impl Tetromino {
             4 => BACK_L,
             5 => Z_TETRO,
             6 => BACK_Z,
-            _ => panic!("This should never occur."),
+            _ => panic!("This should never panic."),
         };
 
         Tetromino {
@@ -76,12 +76,31 @@ impl Tetromino {
         }
     }
 
-    pub fn rotate(&mut self) {
-        self.rotation = match self.rotation {
+    pub fn rotate(tetro: &mut Tetromino) {
+        tetro.rotation = match tetro.rotation {
             Rotation::Zero => Rotation::Ninety,
             Rotation::Ninety => Rotation::OneEighty,
             Rotation::OneEighty => Rotation::TwoSeventy,
             Rotation::TwoSeventy => Rotation::Zero,
+        };
+
+        // These tetros have only two distinguishable rotation orientations.
+        match tetro.matrix {
+            LINE | BACK_Z => {
+                tetro.rotation = match tetro.rotation { // based on state, mutate
+                    Rotation::OneEighty => Rotation::Zero,
+                    Rotation::Ninety => Rotation::TwoSeventy,
+                    _ => { tetro.rotation }, // leave it as-is
+                };
+            },
+            Z_TETRO => {
+                tetro.rotation = match tetro.rotation {
+                    Rotation::OneEighty => Rotation::Zero,
+                    Rotation::TwoSeventy => Rotation::Ninety,
+                    _ => { tetro.rotation }, // leave it as-is
+                };
+            },
+            _ => {},
         };
     }
 
@@ -134,18 +153,41 @@ impl Tetromino {
 
         let mut idx: usize = x + (4 * y);
 
-        match tetro.rotation {
-            Rotation::Zero => { /* Init. Value is Correct */ },
-            Rotation::Ninety => { idx = 12 + y - (x * 4); },
-            Rotation::OneEighty => { idx = 15 - x - (y * 4); },
-            Rotation::TwoSeventy => { idx = 3 - y + (x * 4); },
-        }
+        match tetro.matrix {
+            SQUARE => {
+                /* Rotation is indistinguishable for this tetro. */
+            },
+            LINE => {
+                match tetro.rotation {
+                    Rotation::Zero       => { /* Base Value is Correct */ },
+                    Rotation::Ninety     => { idx = 12 + y - (x * 4); },
+                    Rotation::OneEighty  => { idx = 15 - x - (y * 4); },
+                    Rotation::TwoSeventy => { idx =  3 - y + (x * 4); },
+                }
+            },
+            _ => { // For all other tetro shapes, 
+                if (x > 2) | (y > 2) { return false; };// Never blocks here.
+                                                       //
+                // Rotate only the top left 9 blocks.
+                match tetro.rotation {
+                    Rotation::Zero       => { /* Base Value is Correct */ },
+                    Rotation::Ninety     => { idx =  8 + y - (4 * x); },
+                    Rotation::OneEighty  => { idx = 10 - x - (4 * y); },
+                    Rotation::TwoSeventy => { idx =  2 - y + (4 * x); },
+                };
+            },
+        };
 
         return tetro.matrix[idx] == 1;
     }
 
     fn xy_to_idx(x: isize, y: isize) -> Option<usize> {
-        if x >= 4 || y >= 4 || x < 0 || y < 0 { return None };
+
+        let a: bool = x >= 4;
+        let b       = y >= 4;
+        let c       = x < 0;
+        let d       = x < 0;
+        if a | b | c | d  { return None };
 
         let y = y as usize;
         let x = x as usize;
@@ -154,6 +196,7 @@ impl Tetromino {
     }
 
     fn idx_to_xy(idx: usize) -> Option<(usize, usize)> {
+
         if idx >= 16 { return None };
 
         let x = idx % 4;

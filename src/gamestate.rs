@@ -22,10 +22,9 @@ enum Dir {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum CollisionType {
-    Wall, //Disallow movement only
-    Floor, //Disallow movement && "glue" block to floor.
+    Wall, //Disallow movement or rotation only
+    Floor, //Disallow movement && "glue" block to floor. Disallow rotate.
     NoCollision, //Do nothing
-    //BadRotation todo
 }
 
 pub(crate) struct GameState {
@@ -46,8 +45,8 @@ impl GameState {
         }
         let curr_tetro = tetro_queue.pop().unwrap();
 
-        //set grid[200] (201th element) to be a block always,
-        //for use when we need to do collision checks on out-of-bounds indices.
+        // Set 201st element to be a block always,
+        // for use when we need to do collision checks on out-of-bounds indices.
         grid[200] = '▒';
 
         GameState {
@@ -64,11 +63,11 @@ impl GameState {
     ///based on passed-in InputEvent and passage of time.
     pub fn tick(&mut self, delta_t: Duration, input_event: InputEvent, rng: &mut Rng) -> Vec<String> {
         
-        let mut collision_type = CollisionType::NoCollision;
+        let mut collision_type = self.process_user_input(input_event, rng);//CollisionType::NoCollision;
 
         // it is counter-intuitive to have process_user_input output a collision type.
         // Oh it's because side-effects. Wow bad.
-        collision_type = self.process_user_input(input_event, rng);
+        //collision_type = self.process_user_input(input_event, rng);
 
         self.timer = self.timer.saturating_add(delta_t);
         let timed_out = self.timer >= GRAVITY_TIMER;
@@ -78,7 +77,6 @@ impl GameState {
         }
 
         match collision_type {
-            //TODO
             CollisionType::Floor => {
                 //Edit the grid to reflect
                 self.glue_tetro_to_floor();
@@ -88,7 +86,7 @@ impl GameState {
                 self.tetro_queue.insert(0, Tetromino::new(rng));
                 self.curr_tetro_pos = (4, 0);
             },
-            _ => {},
+            _ => { /* TODO add juice here on wall collisions */},
         }
 
         Tetromino::draw_to_grid(&mut self.grid,
@@ -153,20 +151,19 @@ impl GameState {
         let (mut ghost_x, mut ghost_y) = (self.curr_tetro_pos.0, self.curr_tetro_pos.1);
         let mut ghost_tetro = self.curr_tetro;
 
-        //If we need to check for rotation collision...
+        // If we need to check for rotation collision...
         if let Some(rot) = rotation {
             ghost_tetro.rotation = rot;
         }
 
-        //If we need to check for movement collision...
+        // If we need to check for movement collision...
         if let Some(dir) = direction {
 
             //This match may make ghost_pos vals negative.
             match dir {
                 Dir::Left => ghost_x -= 1,
                 Dir::Right => ghost_x += 1, 
-                Dir::Down => ghost_y += 1,
-                Dir::Gravity => ghost_y += 1,
+                Dir::Down | Dir::Gravity => ghost_y += 1,
             }
         }
         
@@ -180,7 +177,7 @@ impl GameState {
 
         assert!(idx_vec.len() == 16);
 
-        for (m_idx, g_idx) in idx_vec.iter().enumerate() {
+        for (m_idx, g_idx) in idx_vec.iter().enumerate() { // matrix_index, grid_index
 
             let is_grid_block = self.grid[*g_idx] == '▒';
             let is_tetro_block = Tetromino::is_tetro_block(tetro, m_idx);
@@ -220,10 +217,12 @@ impl GameState {
     }
 
     fn process_user_input(&mut self, input_event: InputEvent, rng: &mut Rng) -> CollisionType {
+
         match input_event {
+
             InputEvent::Rotate => {
                 if !self.try_rotate() {
-                    self.curr_tetro.rotate();
+                    Tetromino::rotate(&mut self.curr_tetro);
                     return CollisionType::NoCollision
                 }
             },
@@ -257,7 +256,12 @@ impl GameState {
     }
 
     pub fn xy_to_idx(x: isize, y: isize) -> Option<usize> {
-        if x >= 10 || y >= 20 || x < 0 || y < 0 { return None }
+
+        let a: bool = x >= 10;
+        let b: bool = y >= 20;
+        let c: bool = x < 0;
+        let d: bool = y < 0;
+        if a | b | c | d { return None }
 
         let y = y as usize;
         let x = x as usize;
