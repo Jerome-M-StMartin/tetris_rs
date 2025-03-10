@@ -25,6 +25,7 @@ mod error;
 mod user_input;
 mod tetromino;
 mod gamestate;
+mod scorekeeper;
 
 fn main() {
 

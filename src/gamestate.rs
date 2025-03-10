@@ -8,6 +8,7 @@ use tiny_rng::Rng;
 use super::{
     tetromino::{Rotation, Tetromino},
     user_input::InputEvent,
+    scorekeeper::ScoreKeeper,
 };
 
 const GRAVITY_TIMER: Duration = Duration::from_secs(1);
@@ -34,6 +35,7 @@ pub(crate) struct GameState {
     curr_tetro: Tetromino,
     curr_tetro_pos: (isize, isize),
     timer: Duration,
+    scorekeeper: ScoreKeeper,
 }
 
 impl GameState {
@@ -56,6 +58,7 @@ impl GameState {
             curr_tetro,
             curr_tetro_pos: (4, 0),
             timer: Duration::ZERO,
+            scorekeeper: ScoreKeeper::new(),
         }
     }
     
@@ -63,11 +66,7 @@ impl GameState {
     ///based on passed-in InputEvent and passage of time.
     pub fn tick(&mut self, delta_t: Duration, input_event: InputEvent, rng: &mut Rng) -> Vec<String> {
         
-        let mut collision_type = self.process_user_input(input_event, rng);//CollisionType::NoCollision;
-
-        // it is counter-intuitive to have process_user_input output a collision type.
-        // Oh it's because side-effects. Wow bad.
-        //collision_type = self.process_user_input(input_event, rng);
+        let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
         self.timer = self.timer.saturating_add(delta_t);
         let timed_out = self.timer >= GRAVITY_TIMER;
