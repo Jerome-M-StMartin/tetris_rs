@@ -35,7 +35,7 @@ fn main() {
     crossterm::terminal::enable_raw_mode().unwrap();
 
     let mut buffer = stdout(); //terminal buffer, used by crossterm
-    queue!(buffer, SetTitle("TETRust"), SetSize(22,25)).unwrap();
+    queue!(buffer, SetTitle("Rustris"), SetSize(22,25)).unwrap();
 
     let mut rng = tiny_rng::Rng::from_seed(rng_pre_seed.elapsed().subsec_nanos() as u64);
     let mut game_state = gamestate::GameState::new(['.'; 201], &mut rng);
@@ -57,13 +57,20 @@ fn main() {
 
         //Commit Grid to the Buffer, Formatted Prettily
         for line in grid_lines {
-            queue!(buffer,
-                   Print("     ┃"), //Padding for left terminal border
-                   Print(line),
-                   Print("┃\n\r"))  //Newline & Cursor Return
-                .unwrap();
+            queue!(
+                buffer,
+                Print("     ┃"), //Padding for left terminal border
+                Print(line),
+                Print("┃\n\r") //Newline & Cursor Return
+            ).unwrap();
         }
         queue!(buffer, Print("     ┗━━━━━━━━━━┛\n\r")).unwrap(); //Bottom Border
+        queue!( //print score
+            buffer,
+            Print("\n\r     POINTS "),
+            Print(game_state.get_score()),
+            Print("\n\r"),
+        ).unwrap();
 
         //Execute Queued Buffer Commands & Store Tick Timer
         buffer.flush().unwrap();

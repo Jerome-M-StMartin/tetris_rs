@@ -88,11 +88,58 @@ impl GameState {
             _ => { /* TODO add juice here on wall collisions */},
         }
 
+        self.scorekeeper
+            .read_frame_score(&self.grid)
+            .record_score();
+
+        GameState::remove_scored_rows(&mut self.grid);
+
         Tetromino::draw_to_grid(&mut self.grid,
                                 &mut self.curr_tetro,
                                 &self.curr_tetro_pos);
 
+        for i in 0..10 {
+            if self.grid[i] == '▒' { GameState::game_over() };
+        };
+
         self.grid_to_strings()
+    }
+
+    pub fn game_over() {
+        //TODO
+    }
+
+    pub fn get_score(&self) -> String {
+        self.scorekeeper.get_score().to_string()
+    }
+
+    fn remove_scored_rows(grid: &mut [char; 201]) {
+        let grid_width = 10;
+        let mut block_counter = 0;
+        let mut scored_row_start;
+
+        for i in 0..201 {
+            if block_counter == grid_width { // just moved past a scored row
+                                             
+                scored_row_start = i - grid_width;
+                /*for j in scored_row_start..(scored_row_start + 10) { // erase the scored row
+                    grid[j] = '.';
+                }*/
+
+                //Move all rows above this row down 1.
+                //We're finding scored rows top-down, so no need to keep track.
+                //Here we will go down-up, so as to not overwrite any unscored tiles.
+                let mut k = scored_row_start + (grid_width - 1);
+                while k > 9 {
+                    grid[k] = grid[k - grid_width];
+                    k -= 1;
+                }
+            }
+
+            // Reset for the next loop iteration
+            if i % grid_width == 0 { block_counter = 0; } // new row reset
+            if grid[i] == '▒' { block_counter += 1; } // is this tile a block?
+        };
     }
 
     fn glue_tetro_to_floor(&mut self) {
