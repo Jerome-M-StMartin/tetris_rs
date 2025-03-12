@@ -70,7 +70,7 @@ impl GameState {
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
         self.timer = self.timer.saturating_add(delta_t);
-        let new_timer = ( 1000 - self.scorekeeper.get_level() * 10 ) as u64;
+        let new_timer = ( 1000 - self.scorekeeper.get_level() * 100 ) as u64;
         let timed_out = self.timer >= Duration::from_millis( new_timer );
         if timed_out {
             self.timer = Duration::ZERO;
