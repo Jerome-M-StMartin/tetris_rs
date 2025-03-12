@@ -9,6 +9,7 @@
 pub(crate) struct ScoreKeeper {
     frame_score: usize,
     total_score: usize,
+    lines_cleared: usize,
     level: usize,
 }
 
@@ -17,6 +18,7 @@ impl ScoreKeeper {
         ScoreKeeper {
             frame_score: 0,
             total_score: 0,
+            lines_cleared: 0,
             level: 0,
         }
     }
@@ -43,16 +45,21 @@ impl ScoreKeeper {
         };
 
         self.frame_score = base_score * (self.level + 1);
-
+        self.lines_cleared += scoring_rows;
         return self
     }
 
     pub(crate) fn record_score(&mut self) {
+        self.level = self.lines_cleared / 10;
         self.total_score += self.frame_score;
         self.frame_score = 0;
     }
 
     pub(crate) fn get_score(&self) -> usize {
         self.total_score
+    }
+
+    pub(crate) fn get_level(&self) -> usize {
+        self.level
     }
 }

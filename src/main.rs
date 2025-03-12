@@ -35,7 +35,8 @@ fn main() {
     crossterm::terminal::enable_raw_mode().unwrap();
 
     let mut buffer = stdout(); //terminal buffer, used by crossterm
-    queue!(buffer, SetTitle("Rustris"), SetSize(22,25)).unwrap();
+    //queue!(buffer, SetTitle("Rustris"), SetSize(22,25)).unwrap();
+    queue!(buffer, SetTitle("Rustris"), SetSize(32,35)).unwrap();
 
     let mut rng = tiny_rng::Rng::from_seed(rng_pre_seed.elapsed().subsec_nanos() as u64);
     let mut game_state = gamestate::GameState::new(['.'; 201], &mut rng);
@@ -64,11 +65,18 @@ fn main() {
                 Print("┃\n\r") //Newline & Cursor Return
             ).unwrap();
         }
-        queue!(buffer, Print("     ┗━━━━━━━━━━┛\n\r")).unwrap(); //Bottom Border
+
+        let score = game_state.get_score();
+        let level = game_state.get_level();
+
         queue!( //print score
             buffer,
-            Print("\n\r     POINTS "),
-            Print(game_state.get_score()),
+            Print("     ┗━━━━━━━━━━┛\n\r"), //Bottom Border
+            Print("     POINTS "),
+            Print(score),
+            Print("\n\r"),
+            Print("     LEVEL  "),
+            Print(level),
             Print("\n\r"),
         ).unwrap();
 

@@ -11,7 +11,8 @@ use super::{
     scorekeeper::ScoreKeeper,
 };
 
-const GRAVITY_TIMER: Duration = Duration::from_secs(1);
+//const GRAVITY_TIMER: Duration = Duration::from_secs(1);
+const GRAVITY_TIMER: usize = 1;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Dir {
@@ -69,7 +70,8 @@ impl GameState {
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
         self.timer = self.timer.saturating_add(delta_t);
-        let timed_out = self.timer >= GRAVITY_TIMER;
+        let new_timer = ( 1000 - self.scorekeeper.get_level() * 10 ) as u64;
+        let timed_out = self.timer >= Duration::from_millis( new_timer );
         if timed_out {
             self.timer = Duration::ZERO;
             collision_type = self.try_move(Dir::Gravity);
@@ -111,6 +113,10 @@ impl GameState {
 
     pub fn get_score(&self) -> String {
         self.scorekeeper.get_score().to_string()
+    }
+
+    pub fn get_level(&self) -> String {
+        self.scorekeeper.get_level().to_string()
     }
 
     fn remove_scored_rows(grid: &mut [char; 201]) {
