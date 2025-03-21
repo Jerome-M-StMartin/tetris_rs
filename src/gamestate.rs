@@ -65,7 +65,10 @@ impl GameState {
     
     ///Mutations to the GameState should occur in here,
     ///based on passed-in InputEvent and passage of time.
-    pub fn tick(&mut self, delta_t: Duration, input_event: InputEvent, rng: &mut Rng) -> Vec<String> {
+    pub fn tick(&mut self,
+                delta_t: Duration,
+                input_event: InputEvent,
+                rng: &mut Rng) -> (Vec<String>, usize, usize) {
         
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
@@ -104,11 +107,15 @@ impl GameState {
             if self.grid[i] == '▒' { GameState::game_over() };
         };
 
-        self.grid_to_strings()
+        (self.grid_to_strings(), self.scorekeeper.get_score(), self.scorekeeper.get_level())
     }
 
     pub fn game_over() {
         //TODO
+    }
+/*
+    pub fn get_lines() -> Vec<String> {
+        
     }
 
     pub fn get_score(&self) -> String {
@@ -117,7 +124,7 @@ impl GameState {
 
     pub fn get_level(&self) -> String {
         self.scorekeeper.get_level().to_string()
-    }
+    }*/
 
     fn remove_scored_rows(grid: &mut [char; 201]) {
         let grid_width = 10;

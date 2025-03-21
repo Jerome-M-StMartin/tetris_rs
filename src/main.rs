@@ -6,17 +6,19 @@
 #![allow(dead_code)]
 
 use std::{
-    io::{Write, stdout},
+    io::{stdout, Stdout, Write},
     time::Instant,
 };
 
 use tiny_rng::Rand;
 
 use crossterm::{
+    execute,
+    ExecutableCommand,
     queue, //this is for the macro: queue!()
-    //QueueableCommand, //this is for buffer.queue() fn
     terminal::*,
     style::*,
+    cursor::*,
 };
 
 use user_input::{InputEvent, UserInput};
@@ -26,6 +28,7 @@ mod user_input;
 mod tetromino;
 mod gamestate;
 mod scorekeeper;
+mod grid_buffer;
 
 fn main() {
 
@@ -33,13 +36,29 @@ fn main() {
 
     //Initialization
     crossterm::terminal::enable_raw_mode().unwrap();
+    let mut buffer = stdout();
+                                                           
+    execute!(buffer, Print("\n Press any key to begin playing...\r")).unwrap();
+                                                           
+    let mut any_input;
+    loop {
+        // This is to allow time to gain sufficient entropy for rng
+        any_input = UserInput::poll_read().unwrap();
+        if any_input != InputEvent::Null { break; }
+    }   
 
-    let mut buffer = stdout(); //terminal buffer, used by crossterm
-    //queue!(buffer, SetTitle("Rustris"), SetSize(22,25)).unwrap();
-    queue!(buffer, SetTitle("Rustris"), SetSize(32,35)).unwrap();
+    queue!(buffer,
+        SetTitle("Rustris"),
+        Hide, //cursor
+        DisableLineWrap,
+        EnterAlternateScreen,
+    ).unwrap();
+
+    buffer.flush().unwrap();
 
     let mut rng = tiny_rng::Rng::from_seed(rng_pre_seed.elapsed().subsec_nanos() as u64);
     let mut game_state = gamestate::GameState::new(['.'; 201], &mut rng);
+    let mut grid_buffer_state = Vec::<String>::new();
     let mut last_tick_start = Instant::now();
     
     loop {
@@ -54,28 +73,30 @@ fn main() {
         if input_event == InputEvent::Esc { break; }; //Quit Game
         
         //Game Tick
-        let grid_lines: Vec<String> = game_state.tick(delta_t, input_event, &mut rng);
+        let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
+        if grid_lines.eq(&grid_buffer_state) {
+            last_tick_start = tick_start;
+            continue;
+        }
+        grid_buffer_state = grid_lines.clone();
 
-        //Commit Grid to the Buffer, Formatted Prettily
+        //Build Crossterm Buffer Queue
         for line in grid_lines {
             queue!(
                 buffer,
-                Print("     ┃"), //Padding for left terminal border
+                Print("┃"), // padding for left terminal border
                 Print(line),
-                Print("┃\n\r") //Newline & Cursor Return
+                Print("┃\n\r") // newline & cursor return
             ).unwrap();
         }
 
-        let score = game_state.get_score();
-        let level = game_state.get_level();
-
         queue!( //print score
             buffer,
-            Print("     ┗━━━━━━━━━━┛\n\r"), //Bottom Border
-            Print("     POINTS "),
+            Print("┗━━━━━━━━━━┛\n\r"), //Bottom Border
+            Print("POINTS "),
             Print(score),
             Print("\n\r"),
-            Print("     LEVEL  "),
+            Print("LEVEL  "),
             Print(level),
             Print("\n\r"),
         ).unwrap();
@@ -85,6 +106,7 @@ fn main() {
         last_tick_start = tick_start;
     }
 
+    let _ = buffer.execute(LeaveAlternateScreen);
     crossterm::terminal::disable_raw_mode().unwrap();
     std::process::exit(0);
 }
