@@ -73,12 +73,19 @@ fn main() {
         if input_event == InputEvent::Esc { break; }; //Quit Game
         
         //Game Tick
-        let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
+        //let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
+        let tick_res = game_state.tick(delta_t, input_event, &mut rng).unwrap();
+        let grid_lines = tick_res.grid;
+        let score = tick_res.score;
+        let level = tick_res.level;
+
+        // ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- start
         if grid_lines.eq(&grid_buffer_state) {
             last_tick_start = tick_start;
             continue;
         }
         grid_buffer_state = grid_lines.clone();
+        // ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- end
 
         //Build Crossterm Buffer Queue
         for line in grid_lines {
@@ -103,7 +110,17 @@ fn main() {
 
         //Execute Queued Buffer Commands & Store Tick Timer
         buffer.flush().unwrap();
+
+        if tick_res.end_the_game { break; }
+        
         last_tick_start = tick_start;
+    }
+
+    let mut any_input;
+    loop {
+        // This is to allow time to gain sufficient entropy for rng
+        any_input = UserInput::poll_read().unwrap();
+        if any_input != InputEvent::Null { break; }
     }
 
     let _ = buffer.execute(LeaveAlternateScreen);

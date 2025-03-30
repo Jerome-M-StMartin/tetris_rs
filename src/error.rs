@@ -13,6 +13,7 @@ pub enum Gremlin {
     //add variants as needed
     //Internal Errs
     InvalidInput,
+    UnknownGameError,
 
     //Outside Errs w/ Source Fields
     IOErr(std::io::Error),

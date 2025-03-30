@@ -9,6 +9,7 @@ use super::{
     tetromino::{Rotation, Tetromino},
     user_input::InputEvent,
     scorekeeper::ScoreKeeper,
+    error::Gremlin,
 };
 
 //const GRAVITY_TIMER: Duration = Duration::from_secs(1);
@@ -29,6 +30,13 @@ enum CollisionType {
     NoCollision, //Do nothing
 }
 
+pub(crate) struct TickResult {
+    pub grid: Vec<String>,
+    pub score: usize,
+    pub level: usize,
+    pub end_the_game: bool,
+}
+
 pub(crate) struct GameState {
     grid: [char; 201],
     tetro_queue: Vec<Tetromino>,
@@ -37,6 +45,7 @@ pub(crate) struct GameState {
     curr_tetro_pos: (isize, isize),
     timer: Duration,
     scorekeeper: ScoreKeeper,
+    final_tick: bool,
 }
 
 impl GameState {
@@ -52,14 +61,16 @@ impl GameState {
         // for use when we need to do collision checks on out-of-bounds indices.
         grid[200] = '▒';
 
+
         GameState {
             grid,
             tetro_queue,
             storage: None,
             curr_tetro,
-            curr_tetro_pos: (4, 0),
+            curr_tetro_pos: (3, 0),
             timer: Duration::ZERO,
             scorekeeper: ScoreKeeper::new(),
+            final_tick: false,
         }
     }
     
@@ -68,7 +79,7 @@ impl GameState {
     pub fn tick(&mut self,
                 delta_t: Duration,
                 input_event: InputEvent,
-                rng: &mut Rng) -> (Vec<String>, usize, usize) {
+                rng: &mut Rng) -> Result<TickResult, Gremlin> {
         
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
@@ -103,15 +114,33 @@ impl GameState {
                                 &mut self.curr_tetro,
                                 &self.curr_tetro_pos);
 
-        for i in 0..10 {
-            if self.grid[i] == '▒' { GameState::game_over() };
+        for i in 0..20 {
+            if self.grid[i] == '▒' { self.final_tick = true; };
         };
 
-        (self.grid_to_strings(), self.scorekeeper.get_score(), self.scorekeeper.get_level())
+        Ok(
+            TickResult {
+                grid: self.grid_to_strings(),
+                score: self.scorekeeper.get_score(),
+                level: self.scorekeeper.get_level(),
+                end_the_game: self.final_tick,
+            }
+        )
     }
 
-    pub fn game_over() {
-        //TODO
+    pub fn game_over(&mut self) {
+
+        let msg: Vec<char> = "Game Over!".chars().collect();
+        let mut i: usize = 0; // curr grid index
+        let mut j: usize = 0; // curr game-over message index
+
+        while i < 201 {
+            j = i % 10;
+            self.grid[i] = msg[j];
+            i += 1;
+        }
+
+        self.final_tick = true;
     }
 /*
     pub fn get_lines() -> Vec<String> {
