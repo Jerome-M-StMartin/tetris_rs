@@ -1,5 +1,5 @@
 [package]
-name = "tetris"
+name = "Term-etris"
 version = "0.2.0"
 edition = "2021"
 

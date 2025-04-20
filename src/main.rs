@@ -1,7 +1,7 @@
 //Jerome M. St.Martin
 //June 23, 2022
 
-//TETRIS in Rust - Work In Progress
+//T-ETRIS - Work In Progress
 
 #![allow(dead_code)]
 
@@ -10,6 +10,7 @@ use std::{
     time::Instant,
 };
 
+use grid_buffer::GridBuffer2;
 use tiny_rng::Rand;
 
 use crossterm::{
@@ -42,13 +43,13 @@ fn main() {
                                                            
     let mut any_input;
     loop {
-        // This is to allow time to gain sufficient entropy for rng
+        // This is to allow time to gain entropy for rng
         any_input = UserInput::poll_read().unwrap();
         if any_input != InputEvent::Null { break; }
     }   
 
     queue!(buffer,
-        SetTitle("Rustris"),
+        SetTitle("Terminal-etris"),
         Hide, //cursor
         DisableLineWrap,
         EnterAlternateScreen,
@@ -75,17 +76,15 @@ fn main() {
         //Game Tick
         //let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
         let tick_res = game_state.tick(delta_t, input_event, &mut rng).unwrap();
-        let grid_lines = tick_res.grid;
-        let score = tick_res.score;
-        let level = tick_res.level;
+        let (grid_lines, score, level) = (tick_res.grid, tick_res.score, tick_res.level);
 
         // ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- start
-        if grid_lines.eq(&grid_buffer_state) {
+        /*if grid_lines.eq(&grid_buffer_state) {
             last_tick_start = tick_start;
             continue;
         }
         grid_buffer_state = grid_lines.clone();
-        // ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- end
+        */// ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- end
 
         //Build Crossterm Buffer Queue
         for line in grid_lines {
@@ -116,9 +115,7 @@ fn main() {
         last_tick_start = tick_start;
     }
 
-    let mut any_input;
     loop {
-        // This is to allow time to gain sufficient entropy for rng
         any_input = UserInput::poll_read().unwrap();
         if any_input != InputEvent::Null { break; }
     }

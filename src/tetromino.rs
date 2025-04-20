@@ -50,6 +50,7 @@ pub(crate) enum Rotation {
 
 #[derive(Clone, Copy)]
 pub(crate) struct Tetromino {
+    pub(crate) init_pos: (isize, isize),
     pub(crate) rotation: Rotation,
     pub(crate) matrix: [usize; 16],
     prev_draw_idxs: [usize; 4],
@@ -58,18 +59,19 @@ pub(crate) struct Tetromino {
 impl Tetromino {
     pub fn new(rng: &mut Rng) -> Self {
 
-        let matrix = match rng.rand_range_u32(0, 7) {
-            0 => SQUARE,
-            1 => LINE,
-            2 => T_TETRO,
-            3 => L_TETRO,
-            4 => BACK_L,
-            5 => Z_TETRO,
-            6 => BACK_Z,
+        let (matrix, init_pos) = match rng.rand_range_u32(0, 7) {
+            0 => { (SQUARE,  (3, 0)) },
+            1 => { (LINE,    (4, 0)) },
+            2 => { (T_TETRO, (3, 0)) },
+            3 => { (L_TETRO, (3, 0)) },
+            4 => { (BACK_L,  (4, 0)) },
+            5 => { (Z_TETRO, (3, 0)) },
+            6 => { (BACK_Z,  (4, 0)) },
             _ => panic!("This should never panic."),
         };
 
         Tetromino {
+            init_pos,
             rotation: Rotation::Zero,
             matrix,
             prev_draw_idxs: [0; 4],

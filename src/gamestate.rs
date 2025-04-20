@@ -31,7 +31,7 @@ enum CollisionType {
 }
 
 pub(crate) struct TickResult {
-    pub grid: Vec<String>,
+    pub grid: Vec<String>, //vec of grid rows as strings
     pub score: usize,
     pub level: usize,
     pub end_the_game: bool,
@@ -67,7 +67,7 @@ impl GameState {
             tetro_queue,
             storage: None,
             curr_tetro,
-            curr_tetro_pos: (3, 0),
+            curr_tetro_pos: curr_tetro.init_pos,
             timer: Duration::ZERO,
             scorekeeper: ScoreKeeper::new(),
             final_tick: false,
@@ -79,7 +79,8 @@ impl GameState {
     pub fn tick(&mut self,
                 delta_t: Duration,
                 input_event: InputEvent,
-                rng: &mut Rng) -> Result<TickResult, Gremlin> {
+                rng: &mut Rng)
+                -> Result<TickResult, Gremlin> {
         
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
@@ -99,7 +100,7 @@ impl GameState {
                 //Change curr_tetro, reset curr_tetro_pos
                 self.curr_tetro = self.tetro_queue.pop().unwrap();
                 self.tetro_queue.insert(0, Tetromino::new(rng));
-                self.curr_tetro_pos = (4, 0);
+                self.curr_tetro_pos = self.curr_tetro.init_pos;
             },
             _ => { /* TODO add juice here on wall collisions */},
         }
