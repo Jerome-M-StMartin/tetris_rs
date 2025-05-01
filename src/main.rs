@@ -6,11 +6,10 @@
 #![allow(dead_code)]
 
 use std::{
-    io::{stdout, Stdout, Write},
+    io::{stdout, Write},
     time::Instant,
 };
 
-use grid_buffer::GridBuffer2;
 use tiny_rng::Rand;
 
 use crossterm::{
@@ -59,7 +58,6 @@ fn main() {
 
     let mut rng = tiny_rng::Rng::from_seed(rng_pre_seed.elapsed().subsec_nanos() as u64);
     let mut game_state = gamestate::GameState::new(['.'; 201], &mut rng);
-    let mut grid_buffer_state = Vec::<String>::new();
     let mut last_tick_start = Instant::now();
     
     loop {
@@ -77,14 +75,6 @@ fn main() {
         //let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
         let tick_res = game_state.tick(delta_t, input_event, &mut rng).unwrap();
         let (grid_lines, score, level) = (tick_res.grid, tick_res.score, tick_res.level);
-
-        // ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- start
-        /*if grid_lines.eq(&grid_buffer_state) {
-            last_tick_start = tick_start;
-            continue;
-        }
-        grid_buffer_state = grid_lines.clone();
-        */// ------------- CRUDE PSEUDO DOUBLE BUFFER ----------------------- end
 
         //Build Crossterm Buffer Queue
         for line in grid_lines {
