@@ -12,6 +12,7 @@ pub enum InputEvent {
     Right,
     Down,
     Rotate,
+    Store,
     Esc,
     Null,
 }
@@ -38,7 +39,7 @@ impl UserInput {
         match event {
             Event::Key(key_event) => {
                 let code = key_event.code;
-                let mods = key_event.modifiers; //No need at this time
+                let _mods = key_event.modifiers; //No need at this time
                 match code {
                     KeyCode::Left => msg = InputEvent::Left,
                     KeyCode::Right => msg = InputEvent::Right,
@@ -46,18 +47,16 @@ impl UserInput {
                     KeyCode::Down => msg = InputEvent::Down,
                     KeyCode::Char(c) => {
                         match c {
-                            //HJKL
-                            'h' => msg = InputEvent::Left,
-                            'j' => msg = InputEvent::Down,
-                            'k' => msg = InputEvent::Rotate,
-                            'l' => msg = InputEvent::Right,
-
+                            //HJKL | WASD
+                            'h' | 'a' => msg = InputEvent::Left,
+                            'j' | 's' => msg = InputEvent::Down,
+                            'k' | 'w' => msg = InputEvent::Rotate,
+                            'l' | 'd' => msg = InputEvent::Right,
                             _ => {}
                         }
                     }
-                    KeyCode::Esc => {
-                        msg = InputEvent::Esc;
-                    }
+                    KeyCode::Enter => msg = InputEvent::Store,
+                    KeyCode::Esc => msg = InputEvent::Esc,
                     _ => {}
                 }
             }
