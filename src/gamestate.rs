@@ -116,7 +116,7 @@ impl GameState {
                                 &self.curr_tetro_pos);
 
         for i in 0..20 {
-            if self.grid[i] == '▒' { self.final_tick = true; };
+            if self.grid[i] == '▒' { self.game_over(); };
         };
 
         Ok(

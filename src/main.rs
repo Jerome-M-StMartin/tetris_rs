@@ -3,7 +3,7 @@
 
 //T-ETRIS - Work In Progress
 
-#![allow(dead_code)]
+//#![allow(dead_code)]
 
 use std::{
     io::{stdout, Write},
@@ -73,8 +73,8 @@ fn main() {
         
         //Game Tick
         //let (grid_lines, score, level) = game_state.tick(delta_t, input_event, &mut rng);
-        let tick_res = game_state.tick(delta_t, input_event, &mut rng).unwrap();
-        let (grid_lines, score, level) = (tick_res.grid, tick_res.score, tick_res.level);
+        let tick_result = game_state.tick(delta_t, input_event, &mut rng).unwrap();
+        let (grid_lines, score, level) = (tick_result.grid, tick_result.score, tick_result.level);
 
         //Build Crossterm Buffer Queue
         for line in grid_lines {
@@ -100,7 +100,7 @@ fn main() {
         //Execute Queued Buffer Commands & Store Tick Timer
         buffer.flush().unwrap();
 
-        if tick_res.end_the_game { break; }
+        if tick_result.end_the_game { break; }
         
         last_tick_start = tick_start;
     }

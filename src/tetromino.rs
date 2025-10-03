@@ -180,7 +180,7 @@ impl Tetromino {
             },
         };
 
-        return tetro.matrix[idx] == 1;
+        tetro.matrix[idx] == 1
     }
 
     fn xy_to_idx(x: isize, y: isize) -> Option<usize> {

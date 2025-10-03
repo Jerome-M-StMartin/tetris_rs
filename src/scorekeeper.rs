@@ -46,7 +46,8 @@ impl ScoreKeeper {
 
         self.frame_score = base_score * (self.level + 1);
         self.lines_cleared += scoring_rows;
-        return self
+
+        self
     }
 
     pub(crate) fn record_score(&mut self) {
