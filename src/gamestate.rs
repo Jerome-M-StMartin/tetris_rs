@@ -12,9 +12,6 @@ use super::{
     error::Gremlin,
 };
 
-//const GRAVITY_TIMER: Duration = Duration::from_secs(1);
-const GRAVITY_TIMER: usize = 1;
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Dir {
     Down,
@@ -51,6 +48,7 @@ pub(crate) struct GameState {
 impl GameState {
     pub fn new(mut grid: [char; 201], rng: &mut Rng) -> Self {
         
+        // Initialize the queue of tetros
         let mut tetro_queue = Vec::with_capacity(6);
         for _ in 0..6 {
             tetro_queue.push(Tetromino::new(rng));
@@ -75,19 +73,18 @@ impl GameState {
     }
     
     ///Mutations to the GameState should occur in here,
-    ///based on passed-in InputEvent and passage of time.
+    ///based on te passed-in InputEvent and passage of time.
     pub fn tick(&mut self,
                 delta_t: Duration,
                 input_event: InputEvent,
                 rng: &mut Rng)
                 -> Result<TickResult, Gremlin> {
-        
+
+        let max_tick_duration = Duration::from_millis( (1000 - self.scorekeeper.get_level() * 100 ) as u64 );
         let mut collision_type = self.process_user_input(input_event, rng); //maybe this variable should default to NoCollision
 
         self.timer = self.timer.saturating_add(delta_t);
-        let new_timer = ( 1000 - self.scorekeeper.get_level() * 100 ) as u64;
-        let timed_out = self.timer >= Duration::from_millis( new_timer );
-        if timed_out {
+        if self.timer >= max_tick_duration {
             self.timer = Duration::ZERO;
             collision_type = self.try_move(Dir::Gravity);
         }
@@ -102,7 +99,7 @@ impl GameState {
                 self.tetro_queue.insert(0, Tetromino::new(rng));
                 self.curr_tetro_pos = self.curr_tetro.init_pos;
             },
-            _ => { /* TODO add juice here on wall collisions */},
+            _ => { /* TODO add juice here on collisions */},
         }
 
         self.scorekeeper
@@ -115,7 +112,8 @@ impl GameState {
                                 &mut self.curr_tetro,
                                 &self.curr_tetro_pos);
 
-        for i in 0..20 {
+        // Check for game-over state (a tetro drawn within the top row)
+        for i in 0..10 {
             if self.grid[i] == '▒' { self.game_over(); };
         };
 

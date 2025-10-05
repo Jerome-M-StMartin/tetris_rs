@@ -105,6 +105,8 @@ fn main() {
         last_tick_start = tick_start;
     }
 
+    // Wait for user ack on game end before leaving game screen.
+    execute!(buffer, Print("\nGame Over! Press any key to exit; looping wastefully until you do.\r")).unwrap();
     loop {
         any_input = UserInput::poll_read().unwrap();
         if any_input != InputEvent::Null { break; }

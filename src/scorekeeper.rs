@@ -29,7 +29,7 @@ impl ScoreKeeper {
         let mut scoring_rows = 0;
         let mut block_counter = 0; // if == grid_width, score
 
-        for i in 0..201 {
+        for (i, _) in grid.iter().enumerate() {
             if block_counter == grid_width { scoring_rows += 1; } // is the whole row blocks?
             if i % grid_width == 0 { block_counter = 0; } // new row reset
             if grid[i] == '▒' { block_counter += 1; } // is this tile a block?
